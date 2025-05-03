@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
+dist/
+build/
+venv/
+.env
+.env.*
+
+# VS Code
+.vscode/
+
+# Docker
+**/Dockerfile
+*.log
+docker-compose.override.yml
+
+# React/Frontend
+node_modules/
+*.env.local
+web_ui/.next/
+web_ui/build/
+web_ui/.turbo/
+
+# General OS clutter
+.DS_Store
+Thumbs.db
+
+# Secrets (precaution)
+secrets.yaml
+*.pem
+*.key
+*.crt

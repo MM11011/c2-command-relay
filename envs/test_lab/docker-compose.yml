@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  fake_agent:
+    build:
+      context: ../../agents
+    container_name: fake_agent
+    environment:
+      - AGENT_MODE=test
+    networks:
+      - c2net
+
+  c2_server:
+    build:
+      context: ../..
+    container_name: c2_server
+    ports:
+      - "5000:5000"
+    environment:
+      - C2_ENV=safe
+    networks:
+      - c2net
+
+networks:
+  c2net:
