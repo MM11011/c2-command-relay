@@ -1,0 +1,18 @@
+.agent-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 0 0 8px;
+  }
+  
+  .tag-badge {
+    background-color: #047857; /* emerald-700 */
+    color: #d1fae5;            /* emerald-100 */
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1.4;
+  }
+  

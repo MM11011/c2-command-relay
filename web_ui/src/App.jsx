@@ -1,104 +1,110 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import "./App.css";
+import AgentTags from "./AgentTags";
 
 function App() {
   const [agents, setAgents] = useState([]);
+  const [selectedAgent, setSelectedAgent] = useState(null);
   const [command, setCommand] = useState("");
-  const [response, setResponse] = useState("");
+  const [response, setResponse] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetch("http://localhost:5000/api/agents")
       .then((res) => res.json())
-      .then((data) => setAgents(data))
-      .catch((err) => console.error("Error fetching agents:", err));
+      .then((data) => {
+        setAgents(data);
+        if (data.length > 0) {
+          setSelectedAgent(data[0].agent_id);
+        }
+      });
   }, []);
 
-  const dispatchCommand = async () => {
-    if (!command.trim()) return;
+  const handleDispatchCommand = async () => {
+    if (!selectedAgent || !command) return;
 
-    const agentId = agents[0]?.agent_id; // For now: just sending to the first agent
+    setLoading(true);
+    setResponse(null); // clear prior response
 
     try {
-      const res = await fetch("http://localhost:5000/api/command", {
+      await fetch("http://localhost:5000/api/command", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          agent_id: agentId,
-          command: command.trim(),
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent_id: selectedAgent, command }),
       });
 
-      const data = await res.json();
-      console.log("Dispatched command:", command);
+      let attempts = 0;
+      let result = null;
 
-      // Wait a few seconds for agent to execute (this should later be replaced by a better model)
-      setTimeout(async () => {
-        try {
-          const resultRes = await fetch(`http://localhost:5000/api/command-results/${agentId}`);
-          const resultData = await resultRes.json();
-          setResponse(resultData.result || "No result received from agent.");
-        } catch (err) {
-          console.error("Error fetching command result:", err);
-          setResponse("Error fetching result.");
+      while (attempts < 10) {
+        const res = await fetch(`http://localhost:5000/api/command-results/${selectedAgent}`);
+        const data = await res.json();
+
+        if (data.result) {
+          result = data.result;
+          break;
         }
-      }, 3000);
-    } catch (err) {
-      console.error("Error dispatching command:", err);
-      setResponse("Error sending command.");
+
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        attempts++;
+      }
+
+      setTimeout(() => {
+        setResponse(result || "No result received from agent.");
+        setLoading(false);
+      }, 300); // slight delay to show "Loading..."
+
+    } catch (error) {
+      console.error("❌ Error dispatching command:", error);
+      setResponse("Error dispatching command.");
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <div className="p-6 bg-gray-800 border-b border-gray-700 flex justify-between">
-        <h1 className="text-2xl font-bold">Live C2 Agent Dashboard</h1>
-        <span className="text-sm text-gray-400">Red Team Ops</span>
+    <div className="app-container">
+      <h1>Live C2 Agent Dashboard</h1>
+      <h3>Red Team Ops</h3>
+
+      <div className="agent-table">
+        <div className="agent-row header">
+          <div>Agent ID</div>
+          <div>Hostname</div>
+          <div>IP Address</div>
+          <div>Status</div>
+          <div>Last Check-In</div>
+        </div>
+        {agents.map((agent) => (
+          <div
+            key={agent.agent_id}
+            className="agent-row"
+            onClick={() => setSelectedAgent(agent.agent_id)}
+            style={{
+              backgroundColor: selectedAgent === agent.agent_id ? "#1e293b" : "inherit",
+              cursor: "pointer",
+            }}
+          >
+            <div>{agent.agent_id}</div>
+            <div>{agent.hostname}</div>
+            <div>{agent.ip_address}</div>
+            <div style={{ color: "limegreen", fontWeight: "bold" }}>{agent.status}</div>
+            <div>{agent.last_check_in}</div>
+          </div>
+        ))}
+        <AgentTags tags={["Memory Dumping", "Active Beacon", "TTP: Discovery"]} />
       </div>
 
-      <div className="p-6">
-        <table className="w-full table-auto text-sm text-left text-white">
-          <thead className="bg-gray-700 uppercase text-xs text-gray-300">
-            <tr>
-              <th className="px-4 py-2">Agent ID</th>
-              <th className="px-4 py-2">Hostname</th>
-              <th className="px-4 py-2">IP Address</th>
-              <th className="px-4 py-2">Status</th>
-              <th className="px-4 py-2">Last Check-In</th>
-            </tr>
-          </thead>
-          <tbody>
-            {agents.map((agent) => (
-              <tr key={agent.agent_id} className="bg-gray-800 border-b border-gray-700">
-                <td className="px-4 py-2">{agent.agent_id}</td>
-                <td className="px-4 py-2">{agent.hostname}</td>
-                <td className="px-4 py-2">{agent.ip_address}</td>
-                <td className="px-4 py-2 text-green-400">{agent.status}</td>
-                <td className="px-4 py-2">{agent.last_check_in}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="p-6 bg-gray-800 mt-4 rounded-lg mx-6">
-        <h2 className="text-lg font-semibold mb-2">Command Execution</h2>
+      <div className="command-section">
+        <h3>Command Execution</h3>
         <textarea
-          className="w-full p-4 text-gray-300 bg-gray-700 rounded-md mb-4"
-          rows="3"
-          placeholder="Enter command to send to agent..."
           value={command}
           onChange={(e) => setCommand(e.target.value)}
+          placeholder="Enter command to send to agent..."
         />
-        <button
-          onClick={dispatchCommand}
-          className="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700"
-        >
-          Dispatch Command
-        </button>
-
-        {response && (
-          <div className="mt-4 p-4 bg-gray-700 rounded text-green-400 font-mono">
+        <button onClick={handleDispatchCommand}>Dispatch Command</button>
+        {loading && <div className="response-output">Agent Response: <span className="pending">Loading results...</span></div>}
+        {response && !loading && (
+          <div className="response-output">
             <strong>Agent Response:</strong> {response}
           </div>
         )}
